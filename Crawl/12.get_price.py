@@ -15,11 +15,9 @@ def get_price(company_code):
     blind = no_today.find("span",{"class":"blind"})
     return blind.text
 
+#삼성, SK하이닉스, 삼영
+company_codes = ["005930","000660","005680"]
 
-price_samsung = get_price("005930")
-price_skhynix = get_price("000660")
-
-#삼성주식
-print(price_samsung)
-#sk하이닉스
-print(price_skhynix)
+for item in company_codes:
+    price = get_price(item)
+    print(price)
