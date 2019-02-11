@@ -3,7 +3,7 @@ import subprocess
 import threading
 
 myIp = '192.168.0.19'
-NUM_THREADES = 254
+NUM_THREADES = 254 # 64, 128, 254
 
 def ip_to_mac(myIp):
     updated_mac = get_mac_address(ip=myIp, network_request=True)
