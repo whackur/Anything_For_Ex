@@ -1,32 +1,76 @@
 from getmac import get_mac_address
-import subprocess
-import threading
+import subprocess, threading
+import socket, os, re
+from pythonping import ping
+import io
+from contextlib import redirect_stdout
 
-myIp = '192.168.0.19'
-NUM_THREADES = 254 # 64, 128, 254
+NUM_THREADES = 255 # 64, 128, 255
+ipv4_regex = '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
 
-def ip_to_mac(myIp):
-    updated_mac = get_mac_address(ip=myIp, network_request=True)
-    return updated_mac
 
-def rslt(ipRange,i):
-    for idx in range(254): # Change to 254
-        if i == idx % NUM_THREADES:
-            macAddr = ip_to_mac(ipRange[idx])
-            if macAddr != None:
-                print(ipRange[idx] + " : " + str(macAddr))
+# Automate finding local ipv4 address
+def getMyIp():
+    myIp = ''
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    myIp = s.getsockname()[0]
+    return myIp
 
-# Get ip_prefix
-prefix_range = myIp.split('.')
-ip_prefix = prefix_range[:3]
-ip_prefix = '.'.join(ip_prefix)
+# Input IP 
+def inputIp(myIp):
+    while True:
+        print('Input your IP Address, press ENTER if your IP Address right ' + '[' + myIp + ']' + ' : ',end = '')
+        newIp = input()
+        if newIp == '':
+            return myIp
+        chkIpv4 = re.compile(ipv4_regex) # IPv4 Regex
+        if chkIpv4.match(newIp): # Check IPv4 Regex
+            return newIp
 
-ipRange = [] # Get 'Local IP Range' Array
-macList = []
+# Initialize All IP Lists
+def getAllIpLists(myIp):
+    prefix_range = myIp.split('.')
+    ip_prefix = prefix_range[:3]
+    ip_prefix = '.'.join(ip_prefix)
 
-for idx in range(1,255):
-    ipRange.append(ip_prefix + '.' + str(idx))
+    allIpLists = []
+    for i in range(1,255):
+        allIpLists.append({'IP':ip_prefix + '.' + str(i), 'Alive':False, 'HostName':''})
+    return allIpLists
 
-for i in range (NUM_THREADES):
-    t = threading.Thread(target=rslt, args = (ipRange,i))
-    t.start()
+# Ping Sweep Scan
+def pingScan():
+    for ip in range(3):
+        # standard output redirect
+        with io.StringIO() as buf, redirect_stdout(buf):
+            doPing = ping(allIpLists[ip].get('IP'), count=1)
+            print(doPing)
+            output = buf.getvalue()
+
+        r = output.split(' ') # split by space
+        r = r[0:2]
+        
+        if r[1] == 'from':
+            print(' '.join(r) + ' ' + allIpLists[ip].get('IP'))
+            allIpLists[ip].update({'Alive':True})
+
+def macScan():
+    for ip in range(3):
+        # standard output redirect
+        with io.StringIO() as buf, redirect_stdout(buf):
+            getMac = get_mac_address(ip=allIpLists[ip].get('IP'))
+            print(getMac,end = '')
+            output = buf.getvalue()
+        if output != 'None':
+            print(allIpLists[ip].get('IP') + ' has mac address ' + output)
+            allIpLists[ip].update({'Alive':True})
+            allIpLists[ip].update({'MAC':output})
+
+myIp = getMyIp()
+myIp = inputIp(myIp)
+allIpLists = getAllIpLists(myIp)
+pingScan()
+macScan()
+
+print(allIpLists)
