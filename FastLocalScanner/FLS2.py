@@ -39,20 +39,29 @@ def getAllIpLists(myIp):
     return allIpLists
 
 # Ping Sweep Scan
-def pingScan():
-    for ip in range(254):
-        # standard output redirect
-        with io.StringIO() as buf, redirect_stdout(buf):
-            doPing = ping(allIpLists[ip].get('IP'), count=1, timeout=2)
-            print(doPing)
-            output = buf.getvalue()
+def pingScan(idx):
+    # standard output redirect
+    with io.StringIO() as buf, redirect_stdout(buf):
+        doPing = ping(allIpLists[idx].get('IP'), count=1, timeout=2)
+        print(doPing)
+        output = buf.getvalue()  
 
-        r = output.split(' ') # split by space
-        r = r[0:2]
-        
-        if r[1] == 'from':
-            print(' '.join(r) + ' ' + allIpLists[ip].get('IP'))
-            allIpLists[ip].update({'Alive':True})
+    r = output.split(' ') # split by space
+    r = r[0:2]
+    
+    if r[1] == 'from':
+        print(' '.join(r) + ' ' + allIpLists[idx].get('IP'))
+        allIpLists[idx].update({'Alive':True})
+
+def tPingScan():
+    scanThreads = []
+    for idx in range (0,1):
+        t = threading.Thread(target=pingScan, args=(idx,))
+        scanThreads.append(t)
+    for t in scanThreads:
+        t.start()
+    for t in scanThreads:
+        t.join()
 
 # ARP Request Scan
 def macScan():
@@ -113,7 +122,8 @@ myIp = getMyIp()
 myIp = inputIp(myIp)
 allIpLists = getAllIpLists(myIp)
 print('ping scanning!!')
-pingScan()
+# pingScan()
+tPingScan()
 print('mac scanning!!')
 macScan()
 print('port scanning!!')

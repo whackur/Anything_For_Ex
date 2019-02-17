@@ -100,7 +100,7 @@ for t in scanThreads:
 for t in scanThreads:
     t.join() 
 
-# ICMP Request Threqds
+# ICMP Request Threads
 for i in range (1, 255): # IP Range 1 ~ 254
     t2 = threading.Thread(target=icmpRequestScan, args = (ipRange,i))
     scanThreads2.append(t2)
